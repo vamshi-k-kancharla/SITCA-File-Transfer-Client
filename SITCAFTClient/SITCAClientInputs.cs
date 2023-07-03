@@ -10,7 +10,9 @@ namespace SITCAFileTransferClient
 
         public static string sitcaClientLoadFileURI = "https://localhost:7199/FileTransfer/LoadFile/";
 
-        public static string sitcaTransferFileName = "SITCAInputFile.txt";
+        public static string sitcaClientFilePartRetrievalURI = "https://localhost:7199/FileTransfer/GetFilePartData/";
+
+        public static string sitcaTransferFileName = "100MBFile.txt";
 
     }
 

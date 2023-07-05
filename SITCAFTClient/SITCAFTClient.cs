@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -9,6 +10,7 @@ namespace SITCAFileTransferClient
 {
     class SITCAFTClient
     {
+        public static FileStream fileDestination;
 
         static public async Task<int> RetrieveAFile(string inputFileName)
         {
@@ -57,9 +59,12 @@ namespace SITCAFileTransferClient
 
         static public async Task<int> WriteContentsToAFile(string inputFileName)
         {
+            int returnValue = 0;
+
             try
             {
                 int numberOfFileParts = 0;
+                int currentOffset = 0;
 
                 HttpClient httpSitcaClient = new HttpClient();
 
@@ -103,6 +108,14 @@ namespace SITCAFileTransferClient
                     throw new ArgumentException("Error occured while retrieving file contents : Number of Parts");
                 }
 
+                // Create File and Fill it up
+
+                int totalFileSize = numberOfFileParts * SITCAFTClientInputs.chunkSize;
+
+                fileDestination = File.Create(SITCAFTClientInputs.fileDestinationDir + SITCAFTClientInputs.sitcaTransferFileName,
+                    totalFileSize, FileOptions.RandomAccess);
+
+
                 // Retrieve Number of Parts from the client
 
                 string fileContentsRetrievePartURI = SITCAFTClientInputs.sitcaClientFilePartRetrievalURI +
@@ -122,8 +135,11 @@ namespace SITCAFileTransferClient
                     {
                         Console.WriteLine("File contents of Part Num = " + i);
 
-                        string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
+                        byte[] httpResponseContent = await httpResponseMesssage.Content.ReadAsByteArrayAsync();
                         Console.WriteLine(httpResponseContent);
+
+                        fileDestination.Write(httpResponseContent); //, currentOffset, SITCAFTClientInputs.chunkSize);
+                        currentOffset += SITCAFTClientInputs.chunkSize;
                     }
 
                     else
@@ -135,7 +151,7 @@ namespace SITCAFileTransferClient
                     Console.WriteLine("=========================================================================");
                 }
 
-                return (int)httpResponseMesssage.StatusCode;
+                returnValue = (int)httpResponseMesssage.StatusCode;
 
             }
             catch (Exception e)
@@ -144,8 +160,11 @@ namespace SITCAFileTransferClient
                 Console.WriteLine("Exception occured while retrieving the input file contents : " + inputFileName +
                     " , Message  = " + e.Message);
 
-                return -1;
+                returnValue = -1;
             }
+
+            fileDestination.Close();
+            return returnValue;
 
         }
     }

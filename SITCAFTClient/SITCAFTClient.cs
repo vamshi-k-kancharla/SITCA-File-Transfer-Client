@@ -67,36 +67,11 @@ namespace SITCAFileTransferClient
                 int currentOffset = 0;
 
                 HttpClient httpSitcaClient = new HttpClient();
-
-                string fileContentsNoOfPartsURI = SITCAFTClientInputs.sitcaClientFilePartRetrievalURI +
-                    SITCAFTClientInputs.sitcaTransferFileName + "/NumberOfFileParts";
-
-                HttpResponseMessage httpResponseMesssage = await httpSitcaClient.GetAsync(fileContentsNoOfPartsURI);
-
-                // Retrieve Number of Parts from the client
-
-                if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)
-                {
-                    Console.WriteLine("Number of File Part contents = ");
-
-                    string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
-                    Console.WriteLine(httpResponseContent);
-
-                    Console.WriteLine(httpResponseContent[0] + "." + httpResponseContent[1] + "." +
-                        httpResponseContent[2]);
-
-                    numberOfFileParts = retrieveNumberOfFilePartsFromHTTPResponse(httpResponseContent);
-                    Console.WriteLine("Number of File Parts = " + numberOfFileParts);
-
-                }
-
-                else
-                {
-                    Console.WriteLine("Error Response While Retrieving File Contents : Number of Parts = " + httpResponseMesssage.StatusCode);
-                    throw new ArgumentException("Error occured while retrieving file contents : Number of Parts");
-                }
+                HttpResponseMessage httpResponseMesssage = new HttpResponseMessage();
 
                 // Create File and Fill it up
+
+                numberOfFileParts = await retrieveNumberOfFilePartsThroughQuery();
 
                 int totalFileSize = numberOfFileParts * SITCAFTClientInputs.chunkSize;
 
@@ -148,11 +123,13 @@ namespace SITCAFileTransferClient
 
                         Console.WriteLine("httpResponseContent after response being processed and after replacement : " + httpProcessedResponse);
 
-                        for (int j = 0; j < httpProcessedResponse.Length; j++)
+                        if ( SITCAFTClientInputs.bDebugFlag )
                         {
-                            Console.WriteLine("Letter No : " + j + " ,Char value = " + (char)httpProcessedResponse[j] +
-                                "Byte Value : " + httpProcessedResponse[j] + " ,int value = " + (int)httpProcessedResponse[j]);
-
+                            for (int j = 0; j < httpProcessedResponse.Length; j++)
+                            {
+                                Console.WriteLine("Letter No : " + j + " ,Char value = " + (char)httpProcessedResponse[j] +
+                                    "Byte Value : " + httpProcessedResponse[j] + " ,int value = " + (int)httpProcessedResponse[j]);
+                            }
                         }
 
                         Console.WriteLine("");
@@ -164,13 +141,7 @@ namespace SITCAFileTransferClient
                             httpProcessedResponseByteArray[j] = (byte)httpProcessedResponse[j];
                         }
 
-                        /*
-                        byte[] httpProcessedResponseByteArray = new byte[SITCAFTClientInputs.chunkSize];
-
-                        httpResponseContent.Read(httpProcessedResponseByteArray);
-                        */
-
-                        fileDestination.Write(httpProcessedResponseByteArray); //, currentOffset, SITCAFTClientInputs.chunkSize);
+                        fileDestination.Write(httpProcessedResponseByteArray);
                         currentOffset += SITCAFTClientInputs.chunkSize;
                     }
 
@@ -200,6 +171,60 @@ namespace SITCAFileTransferClient
 
         }
 
+        /// <summary>
+        /// Retrieves total number of file parts to get from the server.
+        /// </summary>
+        /// 
+        /// <param name="httpResponseContent"> http query response containing file parts count data.</param>
+        /// 
+        /// <returns> An integer denoting the number of file parts of the targeted file.</returns>
+
+        static public async Task<int> retrieveNumberOfFilePartsThroughQuery()
+        {
+            int numberOfFileParts = 0;
+
+            HttpClient httpSitcaClient = new HttpClient();
+
+            string fileContentsNoOfPartsURI = SITCAFTClientInputs.sitcaClientFilePartRetrievalURI +
+                SITCAFTClientInputs.sitcaTransferFileName + "/NumberOfFileParts";
+
+            HttpResponseMessage httpResponseMesssage = await httpSitcaClient.GetAsync(fileContentsNoOfPartsURI);
+
+            // Retrieve Number of Parts from the client
+
+            if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)
+            {
+                Console.WriteLine("Number of File Part contents = ");
+
+                string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
+                Console.WriteLine(httpResponseContent);
+
+                if (SITCAFTClientInputs.bDebugFlag)
+                {
+                    Console.WriteLine(httpResponseContent[0] + "." + httpResponseContent[1] + "." +
+                        httpResponseContent[2]);
+                }
+
+                numberOfFileParts = retrieveNumberOfFilePartsFromHTTPResponse(httpResponseContent);
+                Console.WriteLine("Number of File Parts = " + numberOfFileParts);
+            }
+
+            else
+            {
+                Console.WriteLine("Error Response While Retrieving File Contents : Number of Parts = " + httpResponseMesssage.StatusCode);
+                throw new ArgumentException("Error occured while retrieving file contents : Number of Parts");
+            }
+
+            return numberOfFileParts;
+        }
+
+        /// <summary>
+        /// Retrieves total number of file parts to get from the server.
+        /// </summary>
+        /// 
+        /// <param name="httpResponseContent"> http query response containing file parts count data.</param>
+        /// 
+        /// <returns> An integer denoting the number of file parts of the targeted file.</returns>
 
         static public int retrieveNumberOfFilePartsFromHTTPResponse(string httpResponseContent)
         {

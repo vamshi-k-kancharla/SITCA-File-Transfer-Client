@@ -18,6 +18,8 @@ namespace SITCAFileTransferClient
 
         public static int chunkSize = 30;
 
+        public static bool bDebugFlag = false;
+
     }
 }
 

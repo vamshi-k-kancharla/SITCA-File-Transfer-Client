@@ -5,12 +5,21 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SITCAFileTransferClient
 {
     class SITCAFTClient
     {
         public static FileStream fileDestination;
+
+        /// <summary>
+        /// Loads the input file contents into mongoDB through REST API.
+        /// </summary>
+        /// 
+        /// <param name="inputFileName"> Name of the input file to load the contents from.</param>
+        /// 
+        /// <returns> An integer denoting the status code of REST API.</returns>
 
         static public async Task<int> RetrieveAFile(string inputFileName)
         {
@@ -52,14 +61,18 @@ namespace SITCAFileTransferClient
 
         }
 
-        /************************************************************************************************************
-         * Retrieve file contents based on preset protocol and create new file
-         * 
-         ************************************************************************************************************/
+        /// <summary>
+        /// Writes file contents retrieved from query to the destination file.
+        /// </summary>
+        /// 
+        /// <param name="inputFileName"> Name of the input file to write the contents to.</param>
+        /// 
+        /// <returns> An integer denoting the number of file parts of the targeted file.</returns>
 
         static public async Task<int> WriteContentsToAFile(string inputFileName)
         {
             int returnValue = 0;
+            FileStream fileDestination;
 
             try
             {
@@ -78,104 +91,58 @@ namespace SITCAFileTransferClient
                 fileDestination = File.Create(SITCAFTClientInputs.fileDestinationDir + SITCAFTClientInputs.sitcaTransferFileName,
                     totalFileSize, FileOptions.RandomAccess);
 
+                int numberOfPartsInSubGroup = numberOfFileParts / SITCAFTClientInputs.numberOfFileWriteThreads;
 
-                // Retrieve data for each part from file part queries
-
-                string fileContentsRetrievePartURI = SITCAFTClientInputs.sitcaClientFilePartRetrievalURI +
-                    SITCAFTClientInputs.sitcaTransferFileName + "/File-Part-";
-
-                for (int i = 0; i < numberOfFileParts; i++)
+                for( int i = 0; i < SITCAFTClientInputs.numberOfFileWriteThreads; i++)
                 {
-                    Console.WriteLine("=========================================================================");
+                    int startPart = i * numberOfPartsInSubGroup;
 
-                    Console.WriteLine("fileContentRetrievalURI = " + fileContentsRetrievePartURI + i);
+                    int numberOfSubGroupParts = 0;
 
-                    string fileContentRetrievalURI = fileContentsRetrievePartURI + i;
-
-                    httpResponseMesssage = await httpSitcaClient.GetAsync(fileContentRetrievalURI);
-
-                    if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)
+                    if (i == SITCAFTClientInputs.numberOfFileWriteThreads-1)
                     {
-                        Console.WriteLine("File contents of Part Num = " + i);
 
-                        string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
+                        numberOfSubGroupParts = ((numberOfFileParts % SITCAFTClientInputs.numberOfFileWriteThreads) == 0) ?
+                            numberOfPartsInSubGroup : numberOfFileParts - ((SITCAFTClientInputs.numberOfFileWriteThreads - 1) *
+                            numberOfPartsInSubGroup);
 
-                        string httpProcessedResponse = "";
-
-                        Console.WriteLine("httpResponseContent retrieved from http query : ");
-                        
-                        for (int j = 0; j < httpResponseContent.Length; j++)
-                        {
-                            if( j == 0 || j == httpResponseContent.Length -1 )
-                            {
-                                continue;
-                            }
-
-                            httpProcessedResponse += httpResponseContent[j];
-                            Console.Write((char)httpResponseContent[j]);
-                        }
-                        Console.WriteLine("");
-
-                        Console.WriteLine("httpResponseContent after response being processed before being replaced : " + 
-                            httpProcessedResponse);
-
-                        httpProcessedResponse = httpProcessedResponse.Replace("\\r\\n", "\n");
-
-                        Console.WriteLine("httpResponseContent after response being processed and after replacement : " + httpProcessedResponse);
-
-                        if ( SITCAFTClientInputs.bDebugFlag )
-                        {
-                            for (int j = 0; j < httpProcessedResponse.Length; j++)
-                            {
-                                Console.WriteLine("Letter No : " + j + " ,Char value = " + (char)httpProcessedResponse[j] +
-                                    "Byte Value : " + httpProcessedResponse[j] + " ,int value = " + (int)httpProcessedResponse[j]);
-                            }
-                        }
-
-                        Console.WriteLine("");
-
-                        byte[] httpProcessedResponseByteArray = new byte[httpProcessedResponse.Length];
-                        
-                        for( int j = 0; j < httpProcessedResponseByteArray.Length; j++)
-                        {
-                            httpProcessedResponseByteArray[j] = (byte)httpProcessedResponse[j];
-                        }
-
-                        fileDestination.Write(httpProcessedResponseByteArray);
-                        currentOffset += SITCAFTClientInputs.chunkSize;
                     }
 
-                    else
-                    {
-                        Console.WriteLine("Error Response While Retrieving File Contents = " + httpResponseMesssage.StatusCode);
-                        throw new ArgumentException("Error occured while retrieving file contents");
-                    }
+                    SITCAThreadParameters currentParametersOfThread = new SITCAThreadParameters();
 
-                    Console.WriteLine("=========================================================================");
+                    currentParametersOfThread.inputFileName = SITCAFTClientInputs.sitcaTransferFileName;
+                    currentParametersOfThread.startFilePart = startPart;
+                    currentParametersOfThread.numOfPartsForAThread = numberOfSubGroupParts;
+                    currentParametersOfThread.numberOfFileParts = numberOfFileParts;
+                    currentParametersOfThread.fileDestination = fileDestination;
+
+                    Thread sitcaDestinationFileWriteThread = new Thread(SITCAClientThread.WriteContentsToTheFileThread);
+                    sitcaDestinationFileWriteThread.Start(currentParametersOfThread);
+
                 }
 
                 returnValue = (int)httpResponseMesssage.StatusCode;
+
+                fileDestination.Close();
 
             }
             catch (Exception e)
             {
 
-                Console.WriteLine("Exception occured while retrieving the input file contents : " + inputFileName +
-                    " , Message  = " + e.Message);
+                Console.WriteLine("Exception occured while retrieving the input file contents and while writing to file Stream : " + 
+                    inputFileName + " , Message  = " + e.Message);
 
                 returnValue = -1;
             }
 
-            fileDestination.Close();
             return returnValue;
 
         }
 
         /// <summary>
-        /// Retrieves total number of file parts to get from the server.
+        /// Retrieves total number of file parts to get from the server using query.
         /// </summary>
         /// 
-        /// <param name="httpResponseContent"> http query response containing file parts count data.</param>
         /// 
         /// <returns> An integer denoting the number of file parts of the targeted file.</returns>
 

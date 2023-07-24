@@ -20,6 +20,23 @@ namespace SITCAFileTransferClient
 
         public static bool bDebugFlag = false;
 
+        public static int  numberOfFileWriteThreads = 3;
+
     }
+
+    class SITCAThreadParameters
+    {
+        public string inputFileName;
+
+        public int startFilePart;
+
+        public int numOfPartsForAThread;
+
+        public int numberOfFileParts;
+
+        public FileStream fileDestination;
+
+    }
+        
 }
 

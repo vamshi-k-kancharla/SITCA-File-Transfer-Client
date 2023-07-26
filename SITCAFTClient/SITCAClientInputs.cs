@@ -20,7 +20,7 @@ namespace SITCAFileTransferClient
 
         public static bool bDebugFlag = false;
 
-        public static int  numberOfFileWriteThreads = 3;
+        public static int  numberOfFileWriteThreads = 1;
 
     }
 

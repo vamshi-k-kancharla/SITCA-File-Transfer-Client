@@ -84,7 +84,23 @@ namespace SITCAFileTransferClient
                         Console.WriteLine("httpResponseContent after response being processed before being replaced : " + 
                             httpProcessedResponse);
 
-                        httpProcessedResponse = httpProcessedResponse.Replace("\\r\\n", "\n");
+                        int totalNoOfCarriageReturns = 0;
+
+                        /*
+                        for( int k = 0; k < httpProcessedResponse.Length - 1; k++ )
+                        {
+                            Console.WriteLine(" k = " + k + " , [k] = " + httpProcessedResponse[k] +
+                                " ,[k+1] = " + httpProcessedResponse[k + 1]);
+
+                            if (httpProcessedResponse[k] == '\\' && httpProcessedResponse[k+1] == 'r' &&
+                                httpProcessedResponse[k+2] == '\\' && httpProcessedResponse[k+3] == 'n')
+                            {
+                                totalNoOfCarriageReturns++;
+                            }
+
+                        }*/
+
+                        httpProcessedResponse = httpProcessedResponse.Replace("\\r\\n", " \n");
 
                         Console.WriteLine("httpResponseContent after response being processed and after replacement : " + httpProcessedResponse);
 
@@ -97,7 +113,7 @@ namespace SITCAFileTransferClient
                             }
                         }
 
-                        Console.WriteLine("");
+                        Console.WriteLine("Total No of carriage returns in current content = " + totalNoOfCarriageReturns);
 
                         byte[] httpProcessedResponseByteArray = new byte[httpProcessedResponse.Length];
                         
@@ -106,7 +122,7 @@ namespace SITCAFileTransferClient
                             httpProcessedResponseByteArray[j] = (byte)httpProcessedResponse[j];
                         }
 
-                        int currentWriteOffset = i * SITCAFTClientInputs.chunkSize;
+                        int currentWriteOffset = (i * SITCAFTClientInputs.chunkSize) - totalNoOfCarriageReturns;
 
                         Console.WriteLine("Current offset value = " + currentWriteOffset);
 

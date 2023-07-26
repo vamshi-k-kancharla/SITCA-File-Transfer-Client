@@ -92,6 +92,7 @@ namespace SITCAFileTransferClient
                     totalFileSize, FileOptions.RandomAccess);
 
                 int numberOfPartsInSubGroup = numberOfFileParts / SITCAFTClientInputs.numberOfFileWriteThreads;
+                List<Thread> fileWriteThreads = new List<Thread>();
 
                 for( int i = 0; i < SITCAFTClientInputs.numberOfFileWriteThreads; i++)
                 {
@@ -119,9 +120,23 @@ namespace SITCAFileTransferClient
                     Thread sitcaDestinationFileWriteThread = new Thread(SITCAClientThread.WriteContentsToTheFileThread);
                     sitcaDestinationFileWriteThread.Start(currentParametersOfThread);
 
+                    fileWriteThreads.Add(sitcaDestinationFileWriteThread);
+
                 }
 
                 returnValue = (int)httpResponseMesssage.StatusCode;
+
+                while(true)
+                {
+                    if ( AreAllThreadsStopped(fileWriteThreads) )
+                    {
+                        break;
+                    }
+
+                    Console.WriteLine(" Some of the file write threads are still running...Sleep for some time");
+
+                    Thread.Sleep(2000);
+                }
 
                 fileDestination.Close();
 
@@ -137,6 +152,34 @@ namespace SITCAFileTransferClient
 
             return returnValue;
 
+        }
+
+        /// <summary>
+        /// Retrieves total number of file parts to get from the server using query.
+        /// </summary>
+        /// 
+        /// 
+        /// <returns> An integer denoting the number of file parts of the targeted file.</returns>
+
+        static public bool AreAllThreadsStopped(List<Thread> fileWriteThreads)
+        {
+            int i = 0;
+
+            for (; i < fileWriteThreads.Count; i++)
+            {
+
+                if (fileWriteThreads[i].ThreadState == ThreadState.Running)
+                {
+                    break;
+                }
+            }
+
+            if (i == fileWriteThreads.Count)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

@@ -1,11 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SITCAFileTransferClient
 {
@@ -146,6 +141,10 @@ namespace SITCAFileTransferClient
                     Thread.Sleep(2000);
                 }
 
+                fileDestination.Close();
+
+                // Replace 'Space + newline" with "\n" by reading from and writing to output files.
+
             }
             catch (Exception e)
             {
@@ -155,8 +154,6 @@ namespace SITCAFileTransferClient
 
                 returnValue = -1;
             }
-
-            //fileDestination.Close();
 
             return returnValue;
 

@@ -98,6 +98,8 @@ namespace SITCAFileTransferClient
                 {
                     int startPart = i * numberOfPartsInSubGroup;
 
+                    Console.WriteLine(" start Part = " + startPart);
+
                     int numberOfSubGroupParts = 0;
 
                     if (i == SITCAFTClientInputs.numberOfFileWriteThreads-1)
@@ -108,6 +110,12 @@ namespace SITCAFileTransferClient
                             numberOfPartsInSubGroup);
 
                     }
+                    else
+                    {
+                        numberOfSubGroupParts = numberOfPartsInSubGroup;
+                    }
+
+                    Console.WriteLine(" numberOfSubGroupParts = " + numberOfSubGroupParts);
 
                     SITCAThreadParameters currentParametersOfThread = new SITCAThreadParameters();
 
@@ -138,8 +146,6 @@ namespace SITCAFileTransferClient
                     Thread.Sleep(2000);
                 }
 
-                fileDestination.Close();
-
             }
             catch (Exception e)
             {
@@ -149,6 +155,8 @@ namespace SITCAFileTransferClient
 
                 returnValue = -1;
             }
+
+            //fileDestination.Close();
 
             return returnValue;
 

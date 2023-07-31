@@ -1,6 +1,4 @@
 ﻿
-using System.Diagnostics;
-
 namespace SITCAFileTransferClient
 {
     class SITCAFTClientInputs
@@ -16,11 +14,13 @@ namespace SITCAFileTransferClient
 
         public static string sitcaTransferFileName = "SITCAInputFile.txt";
 
-        public static int chunkSize = 30;
+        public static int chunkSize = 25;
 
         public static bool bDebugFlag = false;
 
-        public static int  numberOfFileWriteThreads = 1;
+        public static int  numberOfFileWriteThreads = 3;
+
+        public static Mutex writeThreadSyncMutex = new Mutex();
 
     }
 

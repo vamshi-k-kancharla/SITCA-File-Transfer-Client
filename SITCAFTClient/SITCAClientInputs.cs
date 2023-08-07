@@ -6,19 +6,19 @@ namespace SITCAFileTransferClient
 
         public static string fileDestinationDir = "I:/SITCA File Transfer/SITCA Web Service/DestinationDirectory/";
 
-        public static int noOfFileTransferThreads = 100;
+        public static int noOfFileTransferThreads = 10;
 
         public static string sitcaClientLoadFileURI = "https://localhost:7199/FileTransfer/LoadFile/";
 
         public static string sitcaClientFilePartRetrievalURI = "https://localhost:7199/FileTransfer/GetFilePartData/";
 
-        public static string sitcaTransferFileName = "SITCAInputFile.txt";
+        public static string sitcaTransferFileName = "ChromeSetup.exe";
 
-        public static int chunkSize = 25;
+        public static int chunkSize = 100000;
 
         public static bool bDebugFlag = false;
 
-        public static int  numberOfFileWriteThreads = 3;
+        public static int  numberOfFileWriteThreads = 10;
 
         public static Mutex writeThreadSyncMutex = new Mutex();
 

@@ -160,11 +160,12 @@ namespace SITCAFileTransferClient
         }
 
         /// <summary>
-        /// Retrieves total number of file parts to get from the server using query.
+        /// Checks whether all the threads supplied to it are stopped.
         /// </summary>
         /// 
+        /// <param name="fileWriteThreads"> List of all the threads whose status need to be checked for.</param>
         /// 
-        /// <returns> An integer denoting the number of file parts of the targeted file.</returns>
+        /// <returns> A boolean with Yes ( for all stopped ) & No ( not all threads stopped ) values.</returns>
 
         static public bool AreAllThreadsStopped(List<Thread> fileWriteThreads)
         {

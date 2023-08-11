@@ -57,8 +57,14 @@ namespace SITCAFileTransferClient
                     {
                         Console.WriteLine("File contents of Part Num = " + i);
 
-                        string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
+                        //string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
 
+                        byte[] httpResponseContent = await httpResponseMesssage.Content.ReadAsByteArrayAsync();
+                        int currentWriteOffset = (i * SITCAFTClientInputs.chunkSize);
+
+                        RandomAccess.Write(fileDestination.SafeFileHandle, httpResponseContent, currentWriteOffset);
+
+                        /*
                         string httpProcessedResponse = "";
 
                         Console.WriteLine("httpResponseContent retrieved from http query : ");
@@ -71,7 +77,11 @@ namespace SITCAFileTransferClient
                             }
 
                             httpProcessedResponse += httpResponseContent[j];
-                            Console.Write((char)httpResponseContent[j]);
+
+                            if ( SITCAFTClientInputs.bDebugFlag )
+                            {
+                                Console.Write((char)httpResponseContent[j]);
+                            }
                         }
                         Console.WriteLine("");
 
@@ -104,15 +114,19 @@ namespace SITCAFileTransferClient
 
                         Console.WriteLine("Current offset value = " + currentWriteOffset);
 
+                        /*
                         SITCAFTClientInputs.writeThreadSyncMutex.WaitOne();
 
                         fileDestination.Seek(currentWriteOffset, SeekOrigin.Begin);
                         fileDestination.Write(httpProcessedResponseByteArray);
 
                         SITCAFTClientInputs.writeThreadSyncMutex.ReleaseMutex();
+                        
+
+                        RandomAccess.Write(fileDestination.SafeFileHandle, httpProcessedResponseByteArray, currentWriteOffset);
 
                         Console.WriteLine("After writing the string value to destination file");
-
+                        */
                     }
 
                     else

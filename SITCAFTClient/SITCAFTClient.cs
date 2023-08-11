@@ -79,7 +79,7 @@ namespace SITCAFileTransferClient
 
                 // Create File and Fill it up
 
-                numberOfFileParts = await retrieveNumberOfFilePartsThroughQuery();
+                numberOfFileParts = 105; // await retrieveNumberOfFilePartsThroughQuery();
 
                 int totalFileSize = numberOfFileParts * SITCAFTClientInputs.chunkSize;
 

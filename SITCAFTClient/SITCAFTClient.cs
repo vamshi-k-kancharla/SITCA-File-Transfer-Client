@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SITCAFileTransferClient
 {
@@ -81,13 +82,15 @@ namespace SITCAFileTransferClient
 
                 numberOfFileParts = await retrieveNumberOfFilePartsThroughQuery();
 
-                int totalFileSize = numberOfFileParts * SITCAFTClientInputs.chunkSize;
+                long totalFileSize = SITCAFTClientInputs.fileSize; //numberOfFileParts * SITCAFTClientInputs.chunkSize;
 
                 fileDestination = File.Create(SITCAFTClientInputs.fileDestinationDir + SITCAFTClientInputs.sitcaTransferFileName,
-                    totalFileSize, FileOptions.RandomAccess);
+                    (int)totalFileSize, FileOptions.RandomAccess);
 
-                int numberOfPartsInSubGroup = numberOfFileParts / SITCAFTClientInputs.numberOfFileWriteThreads;
+                //int numberOfPartsInSubGroup = numberOfFileParts / SITCAFTClientInputs.numberOfFileWriteThreads;
                 List<Thread> fileWriteThreads = new List<Thread>();
+
+                /*
 
                 for( int i = 0; i < SITCAFTClientInputs.numberOfFileWriteThreads; i++)
                 {
@@ -112,22 +115,43 @@ namespace SITCAFileTransferClient
 
                     Console.WriteLine(" numberOfSubGroupParts = " + numberOfSubGroupParts);
 
-                    SITCAThreadParameters currentParametersOfThread = new SITCAThreadParameters();
+                */
 
-                    currentParametersOfThread.inputFileName = SITCAFTClientInputs.sitcaTransferFileName;
-                    currentParametersOfThread.startFilePart = startPart;
-                    currentParametersOfThread.numOfPartsForAThread = numberOfSubGroupParts;
-                    currentParametersOfThread.numberOfFileParts = numberOfFileParts;
-                    currentParametersOfThread.fileDestination = fileDestination;
+                long numOfThreads = (SITCAFTClientInputs.fileSize % SITCAFTClientInputs.chunkSize == 0) ?
+                    (SITCAFTClientInputs.fileSize / SITCAFTClientInputs.chunkSize) :
+                    ((SITCAFTClientInputs.fileSize / SITCAFTClientInputs.chunkSize) + 1);
 
-                    Thread sitcaDestinationFileWriteThread = new Thread(SITCAClientThread.WriteContentsToTheFileThread);
-                    sitcaDestinationFileWriteThread.Start(currentParametersOfThread);
+                long numberOfThreads = numOfThreads;
 
-                    fileWriteThreads.Add(sitcaDestinationFileWriteThread);
+                if ( numberOfFileParts != numOfThreads )
+                {
+
+                    Console.WriteLine("Number of FileParts " + numberOfThreads + 
+                        "retrieved from query doesn't match the thread count : " + numOfThreads + "exiting.."
+                        + inputFileName );
+
+                    throw new InvalidDataException("Number of FileParts retrieved from query doesn't match the thread count : exiting..");
 
                 }
 
-                returnValue = (int)httpResponseMesssage.StatusCode;
+                for (long threadNum = 0; threadNum < numberOfThreads; threadNum++)
+                {
+                    SITCAThreadParameters currentParametersOfThread = new SITCAThreadParameters();
+
+                    currentParametersOfThread.inputFileName = SITCAFTClientInputs.sitcaTransferFileName;
+                    currentParametersOfThread.numberOfFileParts = numberOfFileParts;
+                    currentParametersOfThread.fileDestination = fileDestination;
+                    currentParametersOfThread.startFilePart = (int)threadNum;
+
+
+                    Console.WriteLine("Thread is being fired with the following context => fileName = " + 
+                        currentParametersOfThread.inputFileName +  " ,numberOfFileParts = " + numberOfFileParts);
+
+                    Thread currentIterationThread = new Thread(SITCAClientThread.WriteContentsToTheFileThread);
+                    currentIterationThread.Start(currentParametersOfThread);
+
+                    fileWriteThreads.Add(currentIterationThread);
+                }
 
                 while(true)
                 {
@@ -142,6 +166,8 @@ namespace SITCAFileTransferClient
                 }
 
                 fileDestination.Close();
+
+                returnValue = 0;
 
                 // Replace 'Space + newline" with "\n" by reading from and writing to output files.
 

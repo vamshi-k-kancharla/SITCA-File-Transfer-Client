@@ -16,7 +16,7 @@ namespace SITCAFileTransferClient
         /// 
         /// <returns> Status code denoting the success/failure of the process.</returns>
 
-        static public async void WriteContentsToTheFileThread(object threadStartParamObject)
+        static public void WriteContentsToTheFileThread(object threadStartParamObject)
         {
             FileStream fileDestination = null;
 
@@ -26,7 +26,7 @@ namespace SITCAFileTransferClient
 
                 string inputFileName = threadParams.inputFileName;
                 int startFilePart = threadParams.startFilePart;
-                int numOfPartsForAThread = threadParams.numOfPartsForAThread;
+                int numOfPartsForAThread = 1;
                 int numberOfFileParts = threadParams.numberOfFileParts;
                 fileDestination = threadParams.fileDestination;
 
@@ -42,101 +42,35 @@ namespace SITCAFileTransferClient
                 string fileContentsRetrievePartURI = SITCAFTClientInputs.sitcaClientFilePartRetrievalURI +
                     SITCAFTClientInputs.sitcaTransferFileName + "/File-Part-";
 
-                for (int i = startFilePart; i < startFilePart + numOfPartsForAThread; i++)
+                Console.WriteLine("=========================================================================");
+
+                Console.WriteLine("fileContentRetrievalURI = " + fileContentsRetrievePartURI + startFilePart);
+
+                string fileContentRetrievalURI = fileContentsRetrievePartURI + startFilePart;
+
+                httpResponseMesssage = Task.Run( ()=> httpSitcaClient.GetAsync(fileContentRetrievalURI) ).Result;
+
+                if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)
                 {
-                    
-                    Console.WriteLine("=========================================================================");
+                    Console.WriteLine("File contents of Part Num = " + startFilePart);
 
-                    Console.WriteLine("fileContentRetrievalURI = " + fileContentsRetrievePartURI + i);
+                    //string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
 
-                    string fileContentRetrievalURI = fileContentsRetrievePartURI + i;
+                    byte[] httpResponseContent = Task.Run( ()=> httpResponseMesssage.Content.ReadAsByteArrayAsync() ).Result;
+                    int currentWriteOffset = (startFilePart * SITCAFTClientInputs.chunkSize);
 
-                    httpResponseMesssage = await httpSitcaClient.GetAsync(fileContentRetrievalURI);
+                    RandomAccess.Write(fileDestination.SafeFileHandle, httpResponseContent, currentWriteOffset);
 
-                    if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)
-                    {
-                        Console.WriteLine("File contents of Part Num = " + i);
-
-                        //string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
-
-                        byte[] httpResponseContent = await httpResponseMesssage.Content.ReadAsByteArrayAsync();
-                        int currentWriteOffset = (i * SITCAFTClientInputs.chunkSize);
-
-                        RandomAccess.Write(fileDestination.SafeFileHandle, httpResponseContent, currentWriteOffset);
-
-                        /*
-                        string httpProcessedResponse = "";
-
-                        Console.WriteLine("httpResponseContent retrieved from http query : ");
-                        
-                        for (int j = 0; j < httpResponseContent.Length; j++)
-                        {
-                            if( j == 0 || j == httpResponseContent.Length -1 )
-                            {
-                                continue;
-                            }
-
-                            httpProcessedResponse += httpResponseContent[j];
-
-                            if ( SITCAFTClientInputs.bDebugFlag )
-                            {
-                                Console.Write((char)httpResponseContent[j]);
-                            }
-                        }
-                        Console.WriteLine("");
-
-                        Console.WriteLine("httpResponseContent after response being processed before being replaced : " + 
-                            httpProcessedResponse);
-
-                        httpProcessedResponse = httpProcessedResponse.Replace("\\r\\n", " \n");
-
-                        Console.WriteLine("httpResponseContent after response being processed and after replacement : " + httpProcessedResponse);
-
-                        if ( SITCAFTClientInputs.bDebugFlag )
-                        {
-                            for (int j = 0; j < httpProcessedResponse.Length; j++)
-                            {
-                                Console.WriteLine("Letter No : " + j + " ,Char value = " + (char)httpProcessedResponse[j] +
-                                    "Byte Value : " + httpProcessedResponse[j] + " ,int value = " + (int)httpProcessedResponse[j]);
-                            }
-                        }
-
-                        byte[] httpProcessedResponseByteArray = new byte[httpProcessedResponse.Length];
-                        
-                        for( int j = 0; j < httpProcessedResponseByteArray.Length; j++)
-                        {
-                            httpProcessedResponseByteArray[j] = (byte)httpProcessedResponse[j];
-                        }
-
-                        Console.WriteLine("writing httpProcessedResponseByteArray.length = " + httpProcessedResponseByteArray.Length);
-
-                        int currentWriteOffset = (i * SITCAFTClientInputs.chunkSize);
-
-                        Console.WriteLine("Current offset value = " + currentWriteOffset);
-
-                        /*
-                        SITCAFTClientInputs.writeThreadSyncMutex.WaitOne();
-
-                        fileDestination.Seek(currentWriteOffset, SeekOrigin.Begin);
-                        fileDestination.Write(httpProcessedResponseByteArray);
-
-                        SITCAFTClientInputs.writeThreadSyncMutex.ReleaseMutex();
-                        
-
-                        RandomAccess.Write(fileDestination.SafeFileHandle, httpProcessedResponseByteArray, currentWriteOffset);
-
-                        Console.WriteLine("After writing the string value to destination file");
-                        */
-                    }
-
-                    else
-                    {
-                        Console.WriteLine("Error Response While Retrieving File Contents = " + httpResponseMesssage.StatusCode);
-                        throw new ArgumentException("Error occured while retrieving file contents");
-                    }
-
-                    Console.WriteLine("=========================================================================");
+                    //httpProcessedResponse = httpProcessedResponse.Replace("\\r\\n", " \n");
                 }
+
+                else
+                {
+                    Console.WriteLine("Error Response While Retrieving File Contents = " + httpResponseMesssage.StatusCode);
+                    throw new ArgumentException("Error occured while retrieving file contents and writing to destination file");
+                }
+
+                Console.WriteLine("=========================================================================");
 
             }
             catch (Exception e)
@@ -147,14 +81,9 @@ namespace SITCAFileTransferClient
 
             }
 
-            /*
-            if( fileDestination != null )
-            {
-                fileDestination.Close();
-            }*/
-
         }
 
     }
+
 }
 

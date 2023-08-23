@@ -31,11 +31,15 @@ namespace SITCAFileTransferClient
 
                 if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)
                 {
-                    Console.WriteLine("Input File has been loaded successfully");
-                    Console.WriteLine("Contents of Response = ");
+                    if (SITCAFTClientInputs.bFirstLevelDebugFlag == true)
+                    {
 
-                    string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
-                    Console.WriteLine(httpResponseContent);
+                        Console.WriteLine("Input File has been loaded successfully");
+                        Console.WriteLine("Contents of Response = ");
+
+                        string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
+                        Console.WriteLine(httpResponseContent);
+                    }
                 }
 
                 else
@@ -114,6 +118,7 @@ namespace SITCAFileTransferClient
                     }
 
                     Console.WriteLine(" numberOfSubGroupParts = " + numberOfSubGroupParts);
+                }
 
                 */
 
@@ -144,8 +149,12 @@ namespace SITCAFileTransferClient
                     currentParametersOfThread.startFilePart = (int)threadNum;
 
 
-                    Console.WriteLine("Thread is being fired with the following context => fileName = " + 
-                        currentParametersOfThread.inputFileName +  " ,numberOfFileParts = " + numberOfFileParts);
+                    if (SITCAFTClientInputs.bFirstLevelDebugFlag == true)
+                    {
+
+                        Console.WriteLine("Thread is being fired with the following context => fileName = " +
+                        currentParametersOfThread.inputFileName + " ,numberOfFileParts = " + numberOfFileParts);
+                    }
 
                     Thread currentIterationThread = new Thread(SITCAClientThread.WriteContentsToTheFileThread);
                     currentIterationThread.Start(currentParametersOfThread);
@@ -165,7 +174,7 @@ namespace SITCAFileTransferClient
                     Thread.Sleep(2000);
                 }
 
-                fileDestination.Close();
+                //fileDestination.Close();
 
                 returnValue = 0;
 
@@ -236,10 +245,18 @@ namespace SITCAFileTransferClient
 
             if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)
             {
-                Console.WriteLine("Number of File Part contents = ");
+
+                if (SITCAFTClientInputs.bFirstLevelDebugFlag == true)
+                {
+                    Console.WriteLine("Number of File Part contents = ");
+                }
 
                 string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
-                Console.WriteLine(httpResponseContent);
+
+                if (SITCAFTClientInputs.bFirstLevelDebugFlag == true)
+                {
+                    Console.WriteLine(httpResponseContent);
+                }
 
                 if (SITCAFTClientInputs.bDebugFlag)
                 {
@@ -248,12 +265,18 @@ namespace SITCAFileTransferClient
                 }
 
                 numberOfFileParts = retrieveNumberOfFilePartsFromHTTPResponse(httpResponseContent);
-                Console.WriteLine("Number of File Parts = " + numberOfFileParts);
+
+                if (SITCAFTClientInputs.bFirstLevelDebugFlag == true)
+                {
+
+                    Console.WriteLine("Number of File Parts = " + numberOfFileParts);
+                }
             }
 
             else
             {
-                Console.WriteLine("Error Response While Retrieving File Contents : Number of Parts = " + httpResponseMesssage.StatusCode);
+                Console.WriteLine("Error Response While Retrieving File Contents : Number of Parts = " + 
+                    httpResponseMesssage.StatusCode);
                 throw new ArgumentException("Error occured while retrieving file contents : Number of Parts");
             }
 
@@ -289,8 +312,8 @@ namespace SITCAFileTransferClient
             {
 
                 Console.WriteLine("Exception occured while retrieving number of File Parts : " + e.Message);
-
                 return 0;
+
             }
 
             return numberOfFileParts;

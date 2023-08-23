@@ -42,9 +42,12 @@ namespace SITCAFileTransferClient
                 string fileContentsRetrievePartURI = SITCAFTClientInputs.sitcaClientFilePartRetrievalURI +
                     SITCAFTClientInputs.sitcaTransferFileName + "/File-Part-";
 
-                Console.WriteLine("=========================================================================");
+                if ( SITCAFTClientInputs.bFirstLevelDebugFlag == true )
+                {
 
-                Console.WriteLine("fileContentRetrievalURI = " + fileContentsRetrievePartURI + startFilePart);
+                    Console.WriteLine("=========================================================================");
+                    Console.WriteLine("fileContentRetrievalURI = " + fileContentsRetrievePartURI + startFilePart);
+                }
 
                 string fileContentRetrievalURI = fileContentsRetrievePartURI + startFilePart;
 
@@ -52,7 +55,12 @@ namespace SITCAFileTransferClient
 
                 if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)
                 {
-                    Console.WriteLine("File contents of Part Num = " + startFilePart);
+                    
+                    if (SITCAFTClientInputs.bFirstLevelDebugFlag == true)
+                    {
+
+                        Console.WriteLine("File contents of Part Num = " + startFilePart);
+                    }
 
                     //string httpResponseContent = await httpResponseMesssage.Content.ReadAsStringAsync();
 
@@ -70,7 +78,11 @@ namespace SITCAFileTransferClient
                     throw new ArgumentException("Error occured while retrieving file contents and writing to destination file");
                 }
 
-                Console.WriteLine("=========================================================================");
+                if (SITCAFTClientInputs.bFirstLevelDebugFlag == true)
+                {
+
+                    Console.WriteLine("=========================================================================");
+                }
 
             }
             catch (Exception e)
@@ -78,7 +90,6 @@ namespace SITCAFileTransferClient
 
                 Console.WriteLine("Exception occured while retrieving & writing the file contents : " + 
                     " , Message  = " + e.Message);
-
             }
 
         }

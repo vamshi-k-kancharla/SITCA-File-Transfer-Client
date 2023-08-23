@@ -86,68 +86,57 @@ namespace SITCAFileTransferClient
 
                 numberOfFileParts = await retrieveNumberOfFilePartsThroughQuery();
 
-                long totalFileSize = SITCAFTClientInputs.fileSize; //numberOfFileParts * SITCAFTClientInputs.chunkSize;
+                long totalFileSize = SITCAFTClientInputs.fileSize; 
 
                 fileDestination = File.Create(SITCAFTClientInputs.fileDestinationDir + SITCAFTClientInputs.sitcaTransferFileName,
                     (int)totalFileSize, FileOptions.RandomAccess);
 
-                //int numberOfPartsInSubGroup = numberOfFileParts / SITCAFTClientInputs.numberOfFileWriteThreads;
                 List<Thread> fileWriteThreads = new List<Thread>();
 
-                /*
 
-                for( int i = 0; i < SITCAFTClientInputs.numberOfFileWriteThreads; i++)
+                long numOfSubParts = (SITCAFTClientInputs.fileSize % SITCAFTClientInputs.chunkSize == 0) ?
+    (SITCAFTClientInputs.fileSize / SITCAFTClientInputs.chunkSize) :
+    ((SITCAFTClientInputs.fileSize / SITCAFTClientInputs.chunkSize) + 1);
+
+                long totalNoOfCurrentThreadParts = 0;
+
+                long numberOfPartsInSubPart = (numOfSubParts % SITCAFTClientInputs.numberOfThreads == 0) ?
+                    (numOfSubParts / SITCAFTClientInputs.numberOfThreads) :
+                    (numOfSubParts / SITCAFTClientInputs.numberOfThreads + 1);
+
+                for (long currentThreadPart = 0; currentThreadPart < numOfSubParts;
+                    currentThreadPart += numberOfPartsInSubPart)
+
                 {
-                    int startPart = i * numberOfPartsInSubGroup;
 
-                    Console.WriteLine(" start Part = " + startPart);
-
-                    int numberOfSubGroupParts = 0;
-
-                    if (i == SITCAFTClientInputs.numberOfFileWriteThreads-1)
+                    if (numberOfFileParts != numOfSubParts)
                     {
 
-                        numberOfSubGroupParts = ((numberOfFileParts % SITCAFTClientInputs.numberOfFileWriteThreads) == 0) ?
-                            numberOfPartsInSubGroup : numberOfFileParts - ((SITCAFTClientInputs.numberOfFileWriteThreads - 1) *
-                            numberOfPartsInSubGroup);
+                        Console.WriteLine("Number of retrieved FileParts " + numberOfFileParts +
+                            " ,doesn't match the thread count : " + numOfSubParts + "exiting.."
+                            + inputFileName);
+
+                        throw new InvalidDataException("Number of FileParts retrieved from query doesn't match the thread count : exiting..");
 
                     }
-                    else
+
+                    long numberOfPartsInLastChunk = 0;
+
+                    if (currentThreadPart + numberOfPartsInSubPart > numOfSubParts)
                     {
-                        numberOfSubGroupParts = numberOfPartsInSubGroup;
+                        numberOfPartsInLastChunk = numOfSubParts - currentThreadPart;
+
                     }
 
-                    Console.WriteLine(" numberOfSubGroupParts = " + numberOfSubGroupParts);
-                }
 
-                */
-
-                long numOfThreads = (SITCAFTClientInputs.fileSize % SITCAFTClientInputs.chunkSize == 0) ?
-                    (SITCAFTClientInputs.fileSize / SITCAFTClientInputs.chunkSize) :
-                    ((SITCAFTClientInputs.fileSize / SITCAFTClientInputs.chunkSize) + 1);
-
-                long numberOfThreads = numOfThreads;
-
-                if ( numberOfFileParts != numOfThreads )
-                {
-
-                    Console.WriteLine("Number of FileParts " + numberOfThreads + 
-                        "retrieved from query doesn't match the thread count : " + numOfThreads + "exiting.."
-                        + inputFileName );
-
-                    throw new InvalidDataException("Number of FileParts retrieved from query doesn't match the thread count : exiting..");
-
-                }
-
-                for (long threadNum = 0; threadNum < numberOfThreads; threadNum++)
-                {
                     SITCAThreadParameters currentParametersOfThread = new SITCAThreadParameters();
 
                     currentParametersOfThread.inputFileName = SITCAFTClientInputs.sitcaTransferFileName;
-                    currentParametersOfThread.numberOfFileParts = numberOfFileParts;
+                    currentParametersOfThread.numOfPartsForAThread = (numberOfPartsInLastChunk != 0) ? numberOfPartsInLastChunk :
+                        numberOfPartsInSubPart;
                     currentParametersOfThread.fileDestination = fileDestination;
-                    currentParametersOfThread.startFilePart = (int)threadNum;
-
+                    currentParametersOfThread.startFilePart = (int)currentThreadPart;
+                    currentParametersOfThread.numberOfFileParts = (int)numOfSubParts;
 
                     if (SITCAFTClientInputs.bFirstLevelDebugFlag == true)
                     {
@@ -160,11 +149,12 @@ namespace SITCAFileTransferClient
                     currentIterationThread.Start(currentParametersOfThread);
 
                     fileWriteThreads.Add(currentIterationThread);
+
                 }
 
-                while(true)
+                while (true)
                 {
-                    if ( AreAllThreadsStopped(fileWriteThreads) )
+                    if (AreAllThreadsStopped(fileWriteThreads))
                     {
                         break;
                     }

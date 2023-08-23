@@ -18,11 +18,13 @@ namespace SITCAFileTransferClient
 
 
 
-        public static string sitcaTransferFileName = "1GB.bin";
+        public static string sitcaTransferFileName = "100MBFile.txt";
 
         public static int chunkSize = 10000000;
 
-        public static long fileSize = 1048576000;
+        public static long fileSize = 104857600;
+
+        public static long numberOfThreads = 10;
 
     }
 
@@ -30,11 +32,11 @@ namespace SITCAFileTransferClient
     {
         public string inputFileName;
 
-        public int startFilePart;
+        public long startFilePart;
 
-        public int numOfPartsForAThread;
+        public long numOfPartsForAThread;
 
-        public int numberOfFileParts;
+        public long numberOfFileParts;
 
         public FileStream fileDestination;
 

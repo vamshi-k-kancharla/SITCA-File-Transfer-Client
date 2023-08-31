@@ -27,6 +27,7 @@ namespace SITCAFileTransferClient
                 string fileRetrievalURI = SITCAFTClientInputs.sitcaClientLoadFileURI +
                     SITCAFTClientInputs.sitcaTransferFileName;
 
+                httpSitcaClient.Timeout = new TimeSpan(0, 10, 10);
                 HttpResponseMessage httpResponseMesssage = await httpSitcaClient.GetAsync(fileRetrievalURI);
 
                 if (httpResponseMesssage.StatusCode == HttpStatusCode.OK)

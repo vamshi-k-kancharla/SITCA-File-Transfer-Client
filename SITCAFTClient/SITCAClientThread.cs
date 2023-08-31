@@ -31,6 +31,8 @@ namespace SITCAFileTransferClient
                 fileDestination = threadParams.fileDestination;
 
                 HttpClient httpSitcaClient = new HttpClient();
+                httpSitcaClient.Timeout = new TimeSpan(0, 4, 10);
+
                 HttpResponseMessage httpResponseMesssage = new HttpResponseMessage();
 
                 // Create File and Fill it up
